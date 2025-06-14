@@ -47,7 +47,6 @@ pipeline {
             script {
                 echo "--- Finalizing build ---"
                 // Revoke the credentials as a security best practice.
-                sh "gcloud auth revoke ${CLIENT_EMAIL}"
                 // Clean up the workspace to save disk space.
                 cleanWs()
             }
