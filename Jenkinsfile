@@ -9,6 +9,9 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
+                echo "--- Cleaning workspace and checking out SCM ---"
+                // It's good practice to clean the workspace before checkout
+                cleanWs() 
                 checkout scm
             }
         }
@@ -22,10 +25,15 @@ pipeline {
                         gcloud config set project ${CLOUDSDK_CORE_PROJECT}
 
                         echo "--- Verifying gcloud configuration ---"
-                        gcloud --version
                         gcloud config list
 
+                        echo "--- [DEBUG] Listing contents of workspace before sync ---"
+                        # This command will list all files and folders recursively.
+                        # Check your Jenkins build log for its output.
+                        ls -laR
+
                         echo "--- Syncing files to GCS bucket: ${GCS_BUCKET} ---"
+                        # This command syncs the current directory to your GCS bucket.
                         gcloud storage rsync . "${GCS_BUCKET}" --delete-unmatched-destination-objects
                     '''
                 }
@@ -36,7 +44,8 @@ pipeline {
     post {
         always {
             script {
-                echo "--- Finalizing build ---"
+                echo "--- Build finished. Final workspace state will be cleaned by cleanWs() if not already done. ---"
+                // The cleanWs() in the 'Checkout' stage makes this redundant, but it's safe to keep.
                 cleanWs()
             }
         }
