@@ -1,32 +1,56 @@
 pipeline {
     agent any
+
     environment {
+        // Your Google Cloud Project ID
         CLOUDSDK_CORE_PROJECT = 'nice-storm-457303-e8'
+        // The email of the service account you are using
         CLIENT_EMAIL = 'jenkins-gcloud@nice-storm-457303-e8.iam.gserviceaccount.com'
+        // The GCS bucket you are uploading to
+        GCS_BUCKET = 'gs://aeternveritas-git'
     }
+
     stages {
-        stage('test') {
+        stage('Checkout Code') {
             steps {
-                // Use withCredentials to expose the secret file as an environment variable
-                // The variable will contain the path to the temporary file holding the credential.
-                // It's safer and more reliable than directly binding in the 'environment' block.
-                withCredentials([file(credentialsId: 'gcloud-creds', variable: 'GCLOUD_KEY_FILE')]) {
-                    sh '''
-                        gcloud auth activate-service-account --key-file="${GCLOUD_KEY_FILE}"
-                        gcloud version
-                        gcloud compute zones list --project="${CLOUDSDK_CORE_PROJECT}"
-                        gsutil --version
+                // This is the standard way to check out your code from the
+                // Git repository configured in the Jenkins job.
+                checkout scm
+            }
+        }
+
+        stage('Authenticate and Upload to GCS') {
+            steps {
+                // Use withCredentials to securely load your 'gcloud-creds' file.
+                // The path to this secret file will be stored in the GCLOUD_KEY_FILE variable.
+                sh '''
+                        echo "--- Authenticating with service account ---"
+                        gcloud config set account 'gcs-master@nice-storm-457303-e8.iam.gserviceaccount.com'
+
+                        echo "--- Verifying gcloud configuration ---"
+                        gcloud --version
+                        gcloud config list
+
+                        echo "--- Syncing files to GCS bucket: ${GCS_BUCKET} ---"
+                        # Use 'rsync' to efficiently upload files. It only copies changed files
+                        # and the --delete-unmatched-destination-objects flag ensures the bucket
+                        # perfectly mirrors your repository.
+                        gcloud storage rsync . "${GCS_BUCKET}" --delete-unmatched-destination-objects
                     '''
-                }
             }
         }
     }
+
     post {
         always {
-            // Revoke the service account after the pipeline finishes (success or failure)
-            // Ensure CLIENT_EMAIL is visible here.
-            // If gcloud is not in the PATH, use its full path as discussed before.
-            sh "gcloud auth revoke ${CLIENT_EMAIL}"
+            // This block runs after every build, regardless of whether it succeeded or failed.
+            script {
+                echo "--- Finalizing build ---"
+                // Revoke the credentials as a security best practice.
+                sh "gcloud auth revoke ${CLIENT_EMAIL}"
+                // Clean up the workspace to save disk space.
+                cleanWs()
+            }
         }
     }
 }
