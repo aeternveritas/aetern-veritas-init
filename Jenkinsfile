@@ -15,6 +15,7 @@ pipeline {
                         gcloud auth activate-service-account --key-file="${GCLOUD_KEY_FILE}"
                         gcloud version
                         gcloud compute zones list --project="${CLOUDSDK_CORE_PROJECT}"
+                        gsutil --version
                     '''
                 }
             }
