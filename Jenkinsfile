@@ -34,8 +34,7 @@ pipeline {
 
                         echo "--- Syncing files to GCS bucket: ${GCS_BUCKET} ---"
                         # This command syncs the current directory to your GCS bucket.
-                        gcloud storage rsync . "${GCS_BUCKET}" --delete-unmatched-destination-objects
-                    '''
+                        gcloud storage rsync ./src/ "${GCS_BUCKET}" --delete-unmatched-destination-objects                    '''
                 }
             }
         }
