@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         CLOUDSDK_CORE_PROJECT = 'nice-storm-457303-e8'
-        GCS_BUCKET = 'gs://aeternveritas-git'
+        GCS_BUCKET = 'gs://aeternveritas-git/aetern-veritas-init'
     }
 
     stages {
